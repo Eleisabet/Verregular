@@ -11,6 +11,8 @@ final class IrregularVerbs {
     
     // Singleton
     static var shared = IrregularVerbs()
+    
+    
     private init() {
         configureVerbs()
     }
@@ -42,5 +44,7 @@ final class IrregularVerbs {
             Verb(infinitive: "get", pastSimple: "got", parcticiple: "got"),
             Verb(infinitive: "let", pastSimple: "let", parcticiple: "let")
         ]
+        
+        selectedVerbs = verbs
     }
 }

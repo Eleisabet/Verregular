@@ -1,20 +1,19 @@
 //
 //  TrainViewController.swift
-//  Verregular1
+//  Verregular
 //
-//  Created by Elizaveta Potapova on 11/6/24.
+//  Created by Elizaveta Potapova on 11/5/24.
 //
 
 import UIKit
 import SnapKit
 
 final class TrainViewController: UIViewController {
+    
     private lazy var scrollView: UIScrollView = {
         let view = UIScrollView()
         
         view.showsVerticalScrollIndicator = false
-        
-        
         return view
     }()
     
@@ -25,8 +24,6 @@ final class TrainViewController: UIViewController {
         label.font = .boldSystemFont(ofSize: 28)
         label.textColor = .black
         label.textAlignment = .center
-       
-        
         return label
     }()
     
@@ -35,28 +32,21 @@ final class TrainViewController: UIViewController {
         label.font = .systemFont(ofSize: 14)
         label.textColor = .gray
         label.text = "Past Simple"
-        
         return label
     }()
     
     private lazy var participleLabel: UILabel = {
         let label = UILabel()
-        
         label.font = .systemFont(ofSize: 14)
         label.textColor = .gray
         label.text = "Past Participle"
-        
-        
         return label
     }()
     
     private lazy var pastSimpleTextField: UITextField = {
-        
         let field = UITextField()
-        
         field.borderStyle = .roundedRect
         field.delegate = self
-        
         return field
     }()
     
@@ -68,6 +58,17 @@ final class TrainViewController: UIViewController {
         field.delegate = self
         
         return field
+    }()
+    
+    private lazy var skipButton: UIButton = {
+        let button = UIButton()
+        
+        button.layer.cornerRadius = 10
+        button.backgroundColor = .systemGray5
+        button.setTitle("Skip".localized, for: .normal)
+        button.addTarget(self, action: #selector(skipAction), for: .touchUpInside)
+        
+        return button
     }()
     
     private lazy var checkButton: UIButton = {
@@ -82,6 +83,26 @@ final class TrainViewController: UIViewController {
         return button
     }()
     
+    
+    private lazy var progressLabel: UILabel = {
+        let label = UILabel()
+        label.font = .systemFont(ofSize: 16)
+        label.textColor = .darkGray
+        label.textAlignment = .center
+        label.translatesAutoresizingMaskIntoConstraints = false
+        return label
+    }()
+    
+   
+    private lazy var scoreLabel: UILabel = {
+        let label = UILabel()
+        label.font = .systemFont(ofSize: 16)
+        label.textColor = .darkGray
+        label.textAlignment = .center
+        label.translatesAutoresizingMaskIntoConstraints = false
+        return label
+    }()
+    
     // MARK: - Properties
     private let edgeInsets = 30
     private let dataSource = IrregularVerbs.shared.selectedVerbs
@@ -94,8 +115,21 @@ final class TrainViewController: UIViewController {
             infinitiveLabel.text = currentVerb?.infinitive
             pastSimpleTextField.text = ""
             participleTextField.text = ""
+            updateProgressLabel()
+            
+            checkButton.backgroundColor = .systemGray5
+            checkButton.setTitle("Check".localized, for: .normal)
         }
     }
+    
+   
+    private var score: Int = 0 {
+        didSet {
+            updateScoreLabel()
+        }
+    }
+        
+    
     
     // MARK: - Life cycle
     override func viewDidLoad() {
@@ -106,6 +140,11 @@ final class TrainViewController: UIViewController {
         hideKeyboardWhenTappedAround()
         
         infinitiveLabel.text = dataSource.first?.infinitive
+        updateProgressLabel()
+        updateScoreLabel()
+        
+        // new
+        updateProgressLabel()
     }
     
     override func viewWillAppear(_ animated: Bool) {
@@ -121,13 +160,45 @@ final class TrainViewController: UIViewController {
     }
     
     // MARK: - Private methods
+    
+    @objc
+    private func skipAction() {
+        count += 1
+        
+        pastSimpleTextField.text = ""
+        participleTextField.text = ""
+        
+        checkButton.backgroundColor = .systemGray5
+        checkButton.setTitle("Check".localized, for: .normal)
+    }
+    
+    
+    
+    
+    private func updateProgressLabel() {
+        progressLabel.text = "\(count + 1) from \(dataSource.count)"
+    }
+    
+    private func updateScoreLabel() {
+        scoreLabel.text = "Score: \(score)"
+    }
     @objc
     private func checkAction() {
         if checkAnswers() {
+            
+            score += 1
+            // new
+            print("Current score: \(score)")
+            
             if currentVerb?.infinitive == dataSource.last?.infinitive {
-                navigationController?.popViewController(animated: true)
+                showScoreAlert()
+                
             } else {
                 count += 1
+                
+                checkButton.backgroundColor = .systemGray5
+               
+                checkButton.setTitle("Check".localized, for: .normal)
             }
         } else {
             checkButton.backgroundColor = .red
@@ -140,14 +211,37 @@ final class TrainViewController: UIViewController {
         participleTextField.text?.lowercased() == currentVerb?.parcticiple.lowercased()
     }
     
+    private func showScoreAlert() {
+        let alertController = UIAlertController(
+            title: "Congratulations!",
+            message: "You scored \(score) out of \(dataSource.count) points",
+            preferredStyle: .alert
+        )
+        
+        let okAction = UIAlertAction(title: "OK", style: .default) { _ in
+            self.navigationController?.popToRootViewController(animated: true)
+            
+        }
+        
+        alertController.addAction(okAction)
+        present(alertController, animated: true, completion: nil)
+    }
+    
     private func setupUI() {
         view.backgroundColor = .white
         view.addSubview(scrollView)
         scrollView.addSubview(contentView)
-        contentView.addSubviews([infinitiveLabel, pastSimpleLabel, pastSimpleTextField,
-            participleLabel,
-            participleTextField,
-            checkButton])
+        contentView.addSubviews([
+                                 progressLabel,
+                                 scoreLabel,
+                                 infinitiveLabel,
+                                 pastSimpleLabel,
+                                 pastSimpleTextField,
+                                 participleLabel,
+                                 participleTextField,
+                                 checkButton,
+                                 skipButton
+        ])
         
         setUpConstraints()
     }
@@ -161,9 +255,20 @@ final class TrainViewController: UIViewController {
             make.size.edges.equalToSuperview()
         }
         
+        progressLabel.snp.makeConstraints { make in
+            make.top.equalToSuperview().inset(150)
+            make.centerX.equalToSuperview()
+        }
+        
+        scoreLabel.snp.makeConstraints { make in
+            make.top.equalTo(progressLabel.snp.bottom).offset(10)
+            make.centerX.equalToSuperview()
+        }
+        
         infinitiveLabel.snp.makeConstraints { make in
-            make.top.equalToSuperview().inset(200)
+            make.top.equalTo(scoreLabel.snp.bottom).offset(20)
             make.trailing.leading.equalToSuperview().inset(edgeInsets)
+            
         }
         
         pastSimpleLabel.snp.makeConstraints { make in
@@ -187,8 +292,17 @@ final class TrainViewController: UIViewController {
         }
         
         checkButton.snp.makeConstraints { make in
-            make.top.equalTo(participleTextField.snp.bottom).offset(100)
-            make.trailing.leading.equalToSuperview().inset(edgeInsets)
+            make.top.equalTo(participleTextField.snp.bottom).offset(40)
+            make.leading.equalToSuperview().inset(edgeInsets)
+            make.width.equalTo(150)
+        }
+        
+        skipButton.snp.makeConstraints { make in
+            make.top.equalTo(participleTextField.snp.bottom).offset(40)
+            make.leading.equalTo(checkButton.snp.trailing).offset(20)
+            make.width.equalTo(150)
+            //
+            make.trailing.equalToSuperview().inset(edgeInsets)
         }
     }
 }
